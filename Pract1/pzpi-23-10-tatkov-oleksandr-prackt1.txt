@@ -1,0 +1,854 @@
+МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+
+
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+Катедра «Програмна інженерія»
+
+
+
+
+ЗВІТ
+
+
+до практичного завдання
+на тему «Шаблон (патерн) Factory проєктування ПЗ»»
+
+
+
+
+
+
+Прийняв:
+
+ст. викл Сокорчук І.П
+
+
+Виконав: 
+                                                                               
+Татьков О.С
+
+ст. гр. ПЗПІ-23-10                                                                    
+
+
+
+
+
+
+
+
+Харків 2025
+
+1 ІСТОРІЯ ЗМІН
+
+№ДатаВерсія звітуОпис змін та виправлень130.03.20260.1Створення титульної сторінки звіту, мети роботи.231.03.20260.2Написання коду, вивчення джерел.301.04.20260.3Написання коду та тексту для запис у розділ Хід роботи.402.04.20260.4Написано висновки, список використаних джерел.503.04.20260.5Створення додатків.
+
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     						
+2 ЗАВДАННЯ
+
+	Метою практичного заняття є ознайомитися з шаблоном (патерном) проєктування програмного забезпечення - Factory, проаналізувати його структуру, призначення та практичне застосування.
+
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+
+3.1 Загальні відомості про шаблони (патерни) проєктування
+
+Патерни проєктування — це перевірені рішення типових проблем у проєктуванні ПЗ. Їхнє призначення — підвищувати гнучкість, розширюваність і підтримуваність коду, а також полегшувати повторне використання та спілкування між розробниками.
+GoF (Gang of Four) класифікують 23 патерни на три категорії:
+* Породжувальні (Creational) — створення об’єктів;
+* Структурні (Structural) — композиція класів і об’єктів;
+* Поведінкові (Behavioral) — взаємодія та розподіл відповідальності між об’єктами.
+Область застосування — об’єктно-орієнтоване проєктування складних систем, де потрібна слабка зв’язаність, динамічна поведінка та розширення без зміни існуючого коду. Найефективніші в Java, C#, C++, Python при розробці фреймворків, enterprise-додатків та GUI.
+
+3.2 Опис обраного патерна
+
+Назва патерна: Factory Method (Фабричний метод).
+Тип шаблона (патерна): Породжувальнийь(Creational Pattern).
+
+     Factory Method — це породжувальний патерн проєктування, який визначає загальний інтерфейс для створення об’єктів у суперкласі, але дозволяє підкласам змінювати тип створюваних об’єктів. Іншими словами, він делегує процес інстанціювання (створення) конкретних класів нащадкам або спеціалізованим класам, приховуючи від клієнтського коду деталі того, який саме об’єкт буде створено.
+     Основне призначення патерна полягає в тому, щоб надати можливість створювати об’єкти без жорсткого прив’язування клієнтського коду до конкретних класів. Замість того, щоб клієнт безпосередньо викликав конструктор певного класу через new, він звертається до фабричного методу, який сам вирішує, який саме об’єкт повернути. Це особливо зручно в ситуаціях, коли тип створюваного об’єкта залежить від умов (наприклад, типу даних, конфігурації, версії гри чи розширення), або коли потрібно централізовано контролювати процес створення об’єктів зі складною логікою ініціалізації.
+     Передумови застосування Factory Method виникають тоді, коли клас не може наперед знати, який саме тип об’єкта йому потрібно створити, або коли підкласи повинні вирішувати, який клас інстанціювати. У моєму проєкті це ідеально підходить для GuiComposer, де метод ParseGuiElement через великий switch визначає, який саме тип GUI-елемента (ContainerWindowType, ButtonType, IconType тощо) потрібно створити і розпарсити. Замість роздування одного класу, можна створити сімейство парсерів-фабрик, кожен з яких відповідає за свій тип елемента.
+     Серед ключових переваг Factory Method варто виділити те, що він робить код більш гнучким і відкритим для розширення (відповідно до принципу Open-Closed Principle): щоб додати підтримку нового типу GUI-елемента, достатньо створити новий парсер і зареєструвати його, не чіпаючи основний композитор. Код стає чистішим, оскільки логіка створення і початкової ініціалізації об’єкта виноситься в окремий клас. Також суттєво спрощується тестування — кожен фабричний метод або парсер можна тестувати окремо. Крім того, патерн зменшує дублювання коду.
+     Однак є й певні недоліки. Factory Method трохи ускладнює архітектуру: з’являється додатковий шар класів (інтерфейс парсера, базовий парсер, конкретні парсери), що може бути зайвим для простих випадків. Якщо фабрик стає дуже багато, потрібно вирішувати питання їх реєстрації та управління (часто для цього використовують Registry або Dependency Injection). Також у деяких випадках це може призвести до невеликого overhead у продуктивності, хоча для парсингу мод-файлів це абсолютно несуттєво.
+
+3.3 Структура шаблона (патерна)
+     
+Опис структурних частин
+Factory Method патерн складається з таких основних елементів:
+* Product (Продукт) — це інтерфейс або абстрактний клас, який описує загальний тип об’єктів, що створюються фабрикою. Всі конкретні продукти повинні реалізовувати цей інтерфейс.
+* ConcreteProduct (Конкретний продукт) — реальні класи, які реалізують інтерфейс Product. Кожен такий клас представляє конкретний тип об’єкта, який може бути створений.
+* Creator (Творець / Абстрактна фабрика) — абстрактний клас або інтерфейс, який оголошує фабричний метод (зазвичай називається FactoryMethod() або Create()). Цей метод повертає об’єкт типу Product.
+* ConcreteCreator (Конкретний творець) — конкретні підкласи Creator’а, які перевизначають фабричний метод і повертають екземпляр відповідного ConcreteProduct. Саме тут відбувається реальне інстанціювання потрібного класу.
+     Додаткові елементи, які часто використовуються:
+* Client (Клієнт) — код, який працює з Creator’ом через абстрактний інтерфейс, не знаючи про конкретні реалізації продуктів.
+
+Опис взаємодії об’єктів
+     Клієнт викликає фабричний метод у об’єкта Creator’а. Creator не створює об’єкт самостійно, а делегує цю відповідальність одному зі своїх підкласів (ConcreteCreator). Конкретний творець вирішує, який саме ConcreteProduct створити, і повертає його клієнту.
+     Клієнт працює з отриманим об’єктом тільки через інтерфейс Product, тому він не залежить від конкретного класу продукту. Це дозволяє легко додавати нові типи продуктів, створюючи нові ConcreteProduct + ConcreteCreator без зміни існуючого клієнтського коду.
+     
+UML-діаграми з поясненнями
+
+
+Зображення 1 – UML діаграмма зв’язків компонентів патерну.
+
+Пояснення діаграми:
+* Creator — визначає шаблон (скелет) алгоритму створення.
+* FactoryMethod() — ключова операція, яку перевизначають підкласи.
+* ConcreteCreator — вирішує, який саме продукт створити.
+* Product і ConcreteProduct — ієрархія створюваних об’єктів.
+* Client — залежить тільки від абстракцій (Creator та Product), а не від конкретних реалізацій.
+Існує також спрощена версія (Parameterized Factory Method), коли фабричний метод приймає параметр (наприклад, рядок або enum) і на його основі створює потрібний об’єкт всередині одного класу. Але класичний Factory Method використовує саме поліморфізм і підкласи.
+3.4 Реалізація шаблона (патерна)
+      Реалізація шаблону Factory Method у даному проєкті виконана мовою програмування C#. Патерн було застосовано для рефакторингу класу GuiComposer, який відповідає за парсинг GUI-елементів з файлів .gui. Замість одного великого статичного класу з великим switch та численними приватними методами, логіка створення та парсингу кожного типу GUI-елемента була винесена в окремі спеціалізовані класи-парсери.
+      Основні етапи реалізації
+      Створення базових інтерфейсів
+      Спочатку було створено інтерфейс IGuiElementParser, який визначає контракт для всіх парсерів GUI-елементів. Він містить дві властивості/методи:
+  * ElementType — рядок, що ідентифікує тип GUI-елемента (наприклад, "containerwindowtype");
+  * Parse(Bracket bracket) — основний метод, який приймає структуру Bracket і повертає об’єкт, що реалізує інтерфейс IGui.
+      Також було створено абстрактний базовий клас BaseGuiParser, який реалізує інтерфейс IGuiElementParser і містить загальну функціональність: допоміжні методи для парсингу позиції (GetPosFromBracket), розміру (GetSizeFromBracket), фону, відступів та частково спільну логіку парсингу властивостей (ParseCommon). Це дозволило значно зменшити дублювання коду між різними парсерами.
+      [див. Додаток В — IGuiElementParser.cs та BaseGuiParser.cs]
+      Реалізація конкретних класів
+      Для кожного типу GUI-елемента було створено окремий клас-парсер, який успадковується від BaseGuiParser. Кожен такий клас:
+      * Перевизначає властивість ElementType, повертаючи назву відповідного типу;
+      * Реалізує метод Parse(Bracket bracket), в якому відбувається створення конкретного об’єкта (наприклад ContainerWindowType, ButtonType, IconType тощо) та заповнення його властивостей на основі даних з Bracket.
+      Було реалізовано наступні конкретні парсери:
+      * ContainerWindowParser
+      * InstantTextBoxParser
+      * IconParser
+      * ScrollbarParser
+      * ButtonParser
+      * CheckboxParser
+      * ListboxParser
+      * SmoothListboxParser
+      * OverlappingElementsBoxParser
+      * EditBoxParser
+      Особливу увагу було приділено ContainerWindowParser, оскільки він підтримує рекурсивний парсинг вкладених елементів і використовує інші парсери для створення дочірніх GUI-об’єктів.
+      [див. Додаток В — ContainerWindowParser.cs, IconParser.cs, ButtonParser.cs та інші конкретні парсери]
+      Демонстрація використання
+      У класі GuiComposer було організовано централізовану реєстрацію всіх парсерів за допомогою статичного словника Dictionary<string, IGuiElementParser>. Ключем виступає назва типу елемента в нижньому регістрі, а значенням — екземпляр відповідного парсера.
+      Метод ParseGuiElement(Bracket br) був суттєво спрощений: тепер він лише шукає відповідний парсер у словнику та делегує йому обробку Bracket. У разі відсутності парсера для невідомого типу елемента виводиться повідомлення в лог.
+      Такий підхід повністю усунув великий switch-оператор і зробив систему відкритою для розширення — для додавання підтримки нового типу GUI-елемента достатньо створити новий клас-парсер, успадкувати його від BaseGuiParser і зареєструвати його у словнику в GuiComposer.
+      [див. Додаток В — GuiComposer.cs]
+
+
+3.5 Організація GitHub-репозиторію
+* Назва репозиторію: apz-pzpi-23-10-tatkov-oleksandr
+* Структура репозиторію:
+Pract1/  
+Pract2/  
+Lab1/  
+Lab2/  
+Lab3/  
+Lab4/  
+Lab5/  
+README.md  
+LICENSE  
+Файл опису репозиторію README.md:
+#  apz-pzpi-23-10-tatkov-oleksandr
+
+ПЗПІ-23-10
+
+Татьков Олександр Сергійович
+
+Шаблон (патерн) Factory проєктування ПЗ
+
+Дослідження архітектури прогрманої системи Telegram
+
+3.6 Підготовка презентації
+
+* Слайди створено відповідно до таких вимог:
+o українська мова;
+o науково-технічний стиль;
+o нумерація слайдів;
+o відсутність надлишкового оформлення
+
+
+3.7 Підготовка відеозапису доповіді
+
+* Характеристики відео:
+o тривалість: хв;
+o мова: українська;
+o платформа: YouTube: URL;
+o доступ: за посиланням без пароля;
+o додано хронологічний опис.
+
+4 ВИСНОВКИ
+	
+У результаті виконання практичного заняття було:
+* досліджено патерн Factory Method;
+* проаналізовано його архітектурні особливості;
+* реалізовано приклади програмного коду;
+* сформовано навички застосування патернів проєктування;
+* створено GitHub-репозиторій із стандартизованою структурою;
+* підготовлено презентацію та відеодоповідь.
+
+Практичне застосування патернів проєктування дозволяє підвищити повторне використання коду, масштабованість та підтримуваність програмних систем.
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+
+
+ДОДАТОК А
+Посилання на відеозапис доповіді та текст хронологічного опису доповіді
+     
+     Посилання на відеоролик на YouTube: https://youtu.be/-v84cZpsgx0
+     
+     Хронологічний опис відеозапису:
+	00:00 - Вступ. 
+00:44 - Що такє патерни (шаблони) проєктування? 
+01:28 - Класифікація патернів GoF. 
+02:04 - Історія та суть патерну Factory Method. 
+02:42 - Коли застосувати Factory? 
+03:12 - Структура патерну. 
+03:54 - UML-діаграма структури патерну. 
+04:23 - Практична реалізація в проєкті. 
+05:09 - Відповідальність компонентів в реалізації. 
+05:57 - Результати застосування Factory. 
+06:24 - Висновки.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Додаток Б
+Слайди презентації доповіді
+
+
+Зображення Б.1 – Титульний слайд
+
+
+Зображення Б.2 – Вступ
+
+Зображення Б.3 – Що такє патерни ?
+
+
+Зображення Б.4 – Класифікація патернів
+
+Зображення Б.5 – Історія та суть патерну
+
+
+Зображення Б.6 – Коли застосовувати Factory Method?
+
+Зображення Б.7 – Структура патерну.
+
+
+Зображення Б.8 – UML-діаграма шаблону Factory.
+
+Зображення Б.9 – Практична реалізація.
+
+
+Зображення Б.10 – Відповідальність компонентів реалізації.
+
+
+Зображення Б.11 – Результати рефакторингу
+
+
+Зображення Б.12 – Висновки
+
+
+Зображення Б.13 – Перелік джерел
+
+
+
+
+
+
+
+
+Додаток В
+Запити до ШІ, приклади програмного коду
+
+Запит ШІ для рефакторингу классу за патерном:
+
+Перепиши існуючий клас за патерном Factory.
+
+Винеси реалізації конкретних сабтайпів у окремі класи з назвою у форматі {ClassName}Parser.
+
+Кожен парсер має реалізовувати спільний інтерфейс  і відповідати за обробку лише свого типу.
+
+У композері (реєстраторі) реалізуй реєстрацію цих класів у словнику або контейнері по шаблону, щоб можна було легко додавати нові парсери без зміни основного коду.
+
+Весь код має бути розміщений у неймспейсі Application.SubTypeParsers.GuiTypes.
+
+Програмний код
+1) BaseGuiParser та IGuiElementParser
+
+namespace Application.SubTypeParsers
+{
+    public interface IGuiElementParser
+    {
+        string ElementType { get; }
+        IGui Parse(Bracket bracket);
+    }
+}
+
+namespace Application.SubTypeParsers
+{
+    public abstract class BaseGuiParser : IGuiElementParser
+    {
+        public abstract string ElementType { get; }
+
+        public abstract IGui Parse(Bracket bracket);
+
+        // Допоміжні методи, доступні всім парсерам
+        protected void ParseCommonProperties(IGui entity, Bracket br)
+        {
+            foreach (var vr in br.SubVars)
+            {
+                switch (vr.Name.ToLower())
+                {
+                    case "name":
+                        entity.Id = new Identifier(vr.Value.ToString());
+                        break;
+                    case "orientation":
+                        if (Enum.TryParse<GuiOrientationType>(vr.Value.ToString().SnakeToPascal(), true, out var orient))
+                            entity.Orientation = orient; // потрібно привести до конкретного типу, якщо потрібно
+                        break;
+                    case "alwaystransparent":
+                        if (entity is IGui baseEntity)
+                            baseEntity.AlwaysTransparent = vr.Value.ToBool();
+                        break;
+                    case "pdx_tooltip":
+                        if (entity is IGui baseEntity2)
+                            baseEntity2.PdxTooltip = vr.Value.ToString();
+                        break;
+                    case "pdx_tooltip_delayed":
+                        if (entity is IGui baseEntity3)
+                            baseEntity3.PdxTooltipDelayed = vr.Value.ToString();
+                        break;
+                }
+            }
+        }
+
+        #region Helper Methods
+        protected static Point GetPosFromBracket(Bracket br)
+        {
+            int x = 0, y = 0;
+            foreach (Var vr in br.SubVars)
+            {
+                switch (vr.Name.ToLower())
+                {
+                    case "x":
+                        x = vr.Value.ToInt();
+                        break;
+                    case "y":
+                        y = vr.Value.ToInt();
+                        break;
+                }
+            }
+            return new Point(x, y);
+        }
+
+        protected static SizeDefinition GetSizeFromBracket(Bracket br)
+        {
+            int? width = null, height = null;
+            int? minWidthPercent = null, minHeightPercent = null;
+            int? maxWidthPercent = null, maxHeightPercent = null;
+
+            foreach (Var vr in br.SubVars)
+            {
+                switch (vr.Name.ToLower())
+                {
+                    case "width":
+                        width = vr.Value.ToInt();
+                        break;
+                    case "height":
+                        height = vr.Value.ToInt();
+                        break;
+                    case "min":
+                        if (vr.Value is List<Var> minVars)
+                        {
+                            foreach (var subVr in minVars)
+                            {
+                                switch (subVr.Name.ToLower())
+                                {
+                                    case "width":
+                                    case "x":
+                                        minWidthPercent = subVr.Value.ToString().Replace("%", "").ToInt();
+                                        break;
+                                    case "height":
+                                    case "y":
+                                        minHeightPercent = subVr.Value.ToString().Replace("%", "").ToInt();
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                    case "max":
+                        if (vr.Value is List<Var> maxVars)
+                        {
+                            foreach (var subVr in maxVars)
+                            {
+                                switch (subVr.Name.ToLower())
+                                {
+                                    case "width":
+                                    case "x":
+                                        maxWidthPercent = subVr.Value.ToString().Replace("%", "").ToInt();
+                                        break;
+                                    case "height":
+                                    case "y":
+                                        maxHeightPercent = subVr.Value.ToString().Replace("%", "").ToInt();
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return new SizeDefinition()
+            {
+                Width = width,
+                Height = height,
+                MinWidthPercent = minWidthPercent,
+                MinHeightPercent = minHeightPercent,
+                MaxWidthPercent = maxWidthPercent,
+                MaxHeightPercent = maxHeightPercent
+            };
+        }
+
+        protected static GuiBackgroundDefenition ParseBackground(Bracket br)
+        {
+            var background = new GuiBackgroundDefenition();
+
+            foreach (Var vr in br.SubVars)
+            {
+                switch (vr.Name.ToLower())
+                {
+                    case "name":
+                        background.Name = vr.Value.ToString();
+                        break;
+                    case "spritetype":
+                        background.SpriteType = ModDataStorage.Mod.Gfxes.SelectMany(e => e.Entities).FirstOrDefault(e => e.Id.ToString() == vr.Value.ToString()) as SpriteType;
+                        break;
+                    case "quadtexturesprite":
+                        background.QuadTextureSprite = ModDataStorage.Mod.Gfxes.SelectMany(e => e.Entities).FirstOrDefault(e => e.Id.ToString() == vr.Value.ToString()) as CorneredTileSpriteType;
+                        break;
+                }
+            }
+
+            return background;
+        }
+        protected void ParseCommon(IGui entity, Bracket br)
+        {
+            if (entity is null) return;
+
+            foreach (var vr in br.SubVars)
+            {
+                if (entity is IGui guiEntity)
+                {
+                    switch (vr.Name.ToLower())
+                    {
+                        case "name":
+                            entity.Id = new Identifier(vr.Value.ToString());
+                            break;
+                        case "orientation":
+                            if (Enum.TryParse<GuiOrientationType>(vr.Value.ToString().SnakeToPascal(), true, out var orient))
+                                guiEntity.Orientation = orient;
+                            break;
+                        case "alwaystransparent":
+                            guiEntity.AlwaysTransparent = vr.Value.ToBool();
+                            break;
+                        case "pdx_tooltip":
+                            guiEntity.PdxTooltip = vr.Value.ToString();
+                            break;
+                        case "pdx_tooltip_delayed":
+                            guiEntity.PdxTooltipDelayed = vr.Value.ToString();
+                            break;
+                    }
+                }
+            }
+        }
+
+        protected static GuiMarginDefenition ParseMargin(Bracket br)
+        {
+            var margin = new GuiMarginDefenition();
+
+            foreach (Var vr in br.SubVars)
+            {
+                switch (vr.Name.ToLower())
+                {
+                    case "top":
+                        margin.Top = vr.Value.ToInt();
+                        break;
+                    case "bottom":
+                        margin.Bottom = vr.Value.ToInt();
+                        break;
+                    case "left":
+                        margin.Left = vr.Value.ToInt();
+                        break;
+                    case "right":
+                        margin.Right = vr.Value.ToInt();
+                        break;
+                }
+            }
+
+            return margin;
+        }
+        #endregion
+    }
+}
+
+2) ContainerWindowParser.cs, IconParser.cs, ButtonParser.cs та інші конкретні парсери
+
+public class SmoothListboxParser : BaseGuiParser
+{
+    public override string ElementType => "smoothlistboxtype";
+
+    public override IGui Parse(Bracket br)
+    {
+        var listbox = new SmoothListboxType();
+        ParseCommon(listbox, br);
+
+        foreach (var vr in br.SubVars)
+        {
+            switch (vr.Name.ToLower())
+            {
+                case "spacing": listbox.Spacing = vr.Value.ToInt(); break;
+                case "horizontal": listbox.Horizontal = vr.Value.ToBool(); break;
+                case "bordersize": listbox.BorderSize = vr.Value.ToInt(); break;
+                case "background": listbox.Background = vr.Value.ToString(); break;
+                case "scrollbartype":
+                    listbox.ScrollbarType = ModDataStorage.Mod.FindGuiType(vr.Value.ToString()) as ScrollbarType;
+                    break;
+            }
+        }
+
+        foreach (var subBr in br.SubBrackets)
+        {
+            switch (subBr.Name.ToLower())
+            {
+                case "position": listbox.Position = GetPosFromBracket(subBr); break;
+                case "size": listbox.Size = GetSizeFromBracket(subBr); break;
+            }
+        }
+
+        return listbox;
+    }
+}
+
+public class ScrollbarParser : BaseGuiParser
+{
+    public override string ElementType => "scrollbartype";
+
+    public override IGui Parse(Bracket br)
+    {
+        var scrollbar = new ScrollbarType();
+        ParseCommon(scrollbar, br);
+
+        foreach (var vr in br.SubVars)
+        {
+            switch (vr.Name.ToLower())
+            {
+                case "priority": scrollbar.Priority = vr.Value.ToInt(); break;
+                case "maxvalue": scrollbar.MaxValue = vr.Value.ToInt(); break;
+                case "minvalue": scrollbar.MinValue = vr.Value.ToInt(); break;
+                case "stepsize": scrollbar.StepSize = vr.Value.ToInt(); break;
+                case "startvalue": scrollbar.StartValue = vr.Value.ToInt(); break;
+                case "horizontal": scrollbar.Horizontal = vr.Value.ToBool(); break;
+            }
+        }
+
+        foreach (var subBr in br.SubBrackets)
+        {
+            switch (subBr.Name.ToLower())
+            {
+                case "position":
+                    scrollbar.Position = GetPosFromBracket(subBr);
+                    break;
+                case "size":
+                    scrollbar.Size = GetSizeFromBracket(subBr);
+                    break;
+                case "bordersize":
+                    scrollbar.BorderSize = GetSizeFromBracket(subBr);
+                    break;
+            }
+        }
+
+        ParseScrollBarButtons(scrollbar, br);
+        return scrollbar;
+    }
+
+    private void ParseScrollBarButtons(ScrollbarType scrollbar, Bracket br)
+    {
+        string sliderName = "", trackName = "", leftButtonName = "", rightButtonName = "";
+
+        foreach (var vr in br.SubVars.Where(v =>
+            v.Name.ToLower() is "slider" or "track" or "leftbutton" or "rightbutton"))
+        {
+            switch (vr.Name.ToLower())
+            {
+                case "slider": sliderName = vr.Value.ToString(); break;
+                case "track": trackName = vr.Value.ToString(); break;
+                case "leftbutton": leftButtonName = vr.Value.ToString(); break;
+                case "rightbutton": rightButtonName = vr.Value.ToString(); break;
+            }
+        }
+
+        foreach (var subBr in br.SubBrackets.Where(b => b.Name.ToLower() == "guibuttontype"))
+        {
+            var button = new ButtonParser().Parse(subBr) as ButtonType;
+            if (button == null) continue;
+
+            if (!string.IsNullOrEmpty(sliderName) && button.Id?.ToString() == sliderName)
+                scrollbar.Slider = button;
+            else if (!string.IsNullOrEmpty(trackName) && button.Id?.ToString() == trackName)
+                scrollbar.Track = button;
+            else if (!string.IsNullOrEmpty(leftButtonName) && button.Id?.ToString() == leftButtonName)
+                scrollbar.LeftButton = button;
+            else if (!string.IsNullOrEmpty(rightButtonName) && button.Id?.ToString() == rightButtonName)
+                scrollbar.RightButton = button;
+        }
+    }
+}
+
+public class OverlappingElementsBoxParser : BaseGuiParser
+{
+    public override string ElementType => "overlappingelementsboxtype";
+
+    public override IGui Parse(Bracket br)
+    {
+        var box = new OverlappingElementsBoxType();
+        ParseCommon(box, br);
+
+        foreach (var vr in br.SubVars)
+        {
+            switch (vr.Name.ToLower())
+            {
+                case "spacing": box.Spacing = vr.Value.ToInt(); break;
+                case "horizontal": box.Horizontal = vr.Value.ToBool(); break;
+                case "bordersize": box.BorderSize = vr.Value.ToInt(); break;
+                case "texturefile": box.TextureFile = vr.Value.ToString(); break;
+            }
+        }
+
+        foreach (var subBr in br.SubBrackets)
+        {
+            switch (subBr.Name.ToLower())
+            {
+                case "position": box.Position = GetPosFromBracket(subBr); break;
+                case "size": box.Size = GetSizeFromBracket(subBr); break;
+            }
+        }
+
+        return box;
+    }
+}
+
+public class ListboxParser : BaseGuiParser
+ {
+     public override string ElementType => "listboxtype";
+
+     public override IGui Parse(Bracket br)
+     {
+         var listbox = new ListboxType();
+         ParseCommon(listbox, br);
+
+         foreach (var vr in br.SubVars)
+         {
+             switch (vr.Name.ToLower())
+             {
+                 case "name":
+                     listbox.Id = new Identifier(vr.Value.ToString());
+                     break;
+                 case "spacing": listbox.Spacing = vr.Value.ToInt(); break;
+                 case "horizontal": listbox.Horizontal = vr.Value.ToBool(); break;
+                 case "bordersize": listbox.BorderSize = vr.Value.ToInt(); break;
+                 case "background": listbox.Background = vr.Value.ToString(); break;
+                 case "scrollbartype":
+                     listbox.ScrollbarType = ModDataStorage.Mod.FindGuiType(vr.Value.ToString()) as ScrollbarType;
+                     break;
+             }
+         }
+
+         foreach (var subBr in br.SubBrackets)
+         {
+             switch (subBr.Name.ToLower())
+             {
+                 case "position": listbox.Position = GetPosFromBracket(subBr); break;
+                 case "size": listbox.Size = GetSizeFromBracket(subBr); break;
+             }
+         }
+
+         return listbox;
+     }
+ }
+public class IconParser : BaseGuiParser
+{
+    public override string ElementType => "icontype";
+
+    public override IGui Parse(Bracket br)
+    {
+        var icon = new IconType();
+        ParseCommon(icon, br);
+
+        foreach (var vr in br.SubVars)
+        {
+            switch (vr.Name.ToLower())
+            {
+                case "name":
+                    icon.Id = new Identifier(vr.Value.ToString());
+                    break;
+                case "spritetype":
+                    icon.SpriteType = ModDataStorage.Mod.Gfxes.SelectMany(e => e.Entities)
+                        .FirstOrDefault(d => d.Id.ToString() == vr.Value.ToString()) as SpriteType
+                        ?? new SpriteType(DataDefaultValues.NullImageSource, DataDefaultValues.Null);
+                    break;
+                case "quadtexturesprite":
+                    icon.QuadTextureSprite = ModDataStorage.Mod.Gfxes.SelectMany(e => e.Entities)
+                        .FirstOrDefault(d => d.Id.ToString() == vr.Value.ToString()) as CorneredTileSpriteType
+                        ?? new CorneredTileSpriteType();
+                    break;
+                case "centerposition": icon.CenterPosition = vr.Value.ToBool(); break;
+                case "frame": icon.Frame = vr.Value.ToInt(); break;
+                case "hint_tag": icon.HintTag = vr.Value.ToString(); break;
+            }
+        }
+
+        foreach (var subBr in br.SubBrackets)
+        {
+            if (subBr.Name.ToLower() == "position")
+                icon.Position = GetPosFromBracket(subBr);
+        }
+
+        return icon;
+    }
+}
+
+3) GuiComposer.cs
+
+namespace Application.Composers
+{
+    public static class GuiComposer
+    {
+        private static readonly Dictionary<string, IGuiElementParser> _parsers = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "containerwindowtype", new ContainerWindowParser() },
+            { "instanttextboxtype", new InstantTextBoxParser() },
+            { "icontype", new IconParser() },
+            { "scrollbartype", new ScrollbarParser() },
+            { "buttontype", new ButtonParser() },
+            { "checkboxtype", new CheckboxParser() },
+            { "listboxtype", new ListboxParser() },
+            { "smoothlistboxtype", new SmoothListboxParser() },
+            { "overlappingelementsboxtype", new OverlappingElementsBoxParser() },
+            { "editboxtype", new EditBoxParser() }
+        };
+        public static List<GuiFile<IGui>> Parse()
+        {
+            List<GuiFile<IGui>> result = new List<GuiFile<IGui>>();
+            string[] guidirs =
+            {
+                ModPathes.InterfacePath,
+                GamePathes.InterfacePath,
+            };
+
+            List<string> seenModFiles = new List<string>();
+
+            foreach (var dir in guidirs)
+            {
+                if (!Directory.Exists(dir)) continue;
+                var files = Directory.GetFiles(dir, "*.gui", SearchOption.AllDirectories);
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        var guiFile = ParseFile(file);
+
+                        if (dir == ModPathes.InterfacePath)
+                        {
+                            seenModFiles.Add(guiFile.FileName);
+                        }
+                        else
+                        {
+                            if (seenModFiles.Contains(guiFile.FileName))
+                            {
+                                continue;
+                            }
+                        }
+
+                        result.AddSafe(guiFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.AddDbgLog(StaticLocalisation.GetString("DbgLog.FailedToParseGuiFile", file, ex));
+                    }
+                }
+            }
+            Logger.AddLog(StaticLocalisation.GetString("Log.ParsedGuiFilesCount", result.Count));
+            return result;
+        }
+        public static GuiFile<IGui> ParseFile(string filePath)
+        {
+            FuncFile file = new TxtParser(new TxtPattern()).Parse(filePath) as FuncFile;
+            GuiFile<IGui> res = new GuiFile<IGui> { FileFullPath = filePath };
+
+            foreach (Bracket guiTypesBr in file.Brackets.Where(b => b.Name == "guiTypes"))
+            {
+                foreach (Bracket br in guiTypesBr.SubBrackets)
+                {
+                    IGui entity = ParseGuiElement(br);
+                    if (entity != null)
+                        res.Entities.Add(entity);
+                }
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Универсальный метод парсинга GUI элементов
+        /// </summary>
+        private static IGui ParseGuiElement(Bracket br)
+        {
+            string typeName = br.Name.ToLower();
+
+            if (_parsers.TryGetValue(typeName, out var parser))
+            {
+                try
+                {
+                    return parser.Parse(br);
+                }
+                catch (Exception ex)
+                {
+                    Logger.AddDbgLog($"Помилка парсингу {typeName}: {ex.Message}");
+                    return null;
+                }
+            }
+            Logger.AddDbgLog(StaticLocalisation.GetString("DbgLog.UnknownGuiElementType", br.Name));
+            return null;
+        }
+    }
+}
